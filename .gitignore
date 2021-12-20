@@ -174,3 +174,6 @@ dmypy.json
 
 .idea
 .DS_Store
+GrailQA/entity_linker/data/
+GrailQA/cache/
+GrailQA/outputs/

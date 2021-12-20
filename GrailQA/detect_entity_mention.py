@@ -18,7 +18,7 @@ from entity_linker.aaqu_util import normalize_entity_name, remove_prefixes_from_
 
 def _parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--split', required=True, help='split to operate on')
+    parser.add_argument('--split', required=True, help='split to operate on') # the split file: ['dev','test','train']
     return parser.parse_args()
 
 
@@ -35,7 +35,7 @@ def to_output_data_format(identified_entity):
 
 
 def get_all_entity_candidates(linker, utterance):
-    mentions = linker.get_mentions(utterance)
+    mentions = linker.get_mentions(utterance) # get all the mentions detected by ner model
     identified_entities = []
     mids = set()
     # print(mentions)
@@ -217,10 +217,16 @@ def check_given_entity_link_coverage(split):
 
 
 def dump_entity_linking_for_training(split, keep=10):
+    
+    # 1. build and load entity linking surface index
+    # surface_index_memory.EntitySurfaceIndexMemory(entity_list_file, surface_map_file, output_prefix)
     surface_index = surface_index_memory.EntitySurfaceIndexMemory(
         "entity_linker/data/entity_list_file_freebase_complete_all_mention", "entity_linker/data/surface_map_file_freebase_complete_all_mention",
         "entity_linker/data/freebase_complete_all_mention")
+    
+    # 2. load BERTEntityLinker
     entity_linker = BertEntityLinker(surface_index, model_path="/BERT_NER/trained_ner_model/", device="cuda:0")
+    # sanity check
     sanity_checking = get_all_entity_candidates(entity_linker, "the music video stronger was directed by whom")
     print('RUNNING Sanity Checking on untterance')
     print('\t', "the music video stronger was directed by whom")
@@ -228,10 +234,12 @@ def dump_entity_linking_for_training(split, keep=10):
     print('Checking result should successfully link stronger to some nodes in Freebase (MIDs)')
     print('If checking result does not look good please check if the linker has been set up successfully')
 
+    # 3. load dataset split file
     datafile = f'outputs/grailqa_v1.0_{split}.json'
     with open(datafile) as f:
         data = json.load(f)
     
+    # 4. do entity linking
     el_results = {}
     for ex in tqdm(data, total=len(data)):
         # print(ex.keys())
@@ -241,6 +249,7 @@ def dump_entity_linking_for_training(split, keep=10):
         all_candidates = [x[:keep] for x in all_candidates]
         el_results[qid] = all_candidates
 
+    # 5. dump the entity linking results
     with open(f'outputs/grail_{split}_entities.json', 'w') as f:
         json.dump(el_results, f)
 

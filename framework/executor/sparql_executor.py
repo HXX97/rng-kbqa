@@ -5,7 +5,7 @@ import urllib
 from pathlib import Path
 from tqdm import tqdm
 
-sparql = SPARQLWrapper("http://localhost:3001/sparql")
+sparql = SPARQLWrapper("http://114.212.82.29:8891/sparql")
 sparql.setReturnFormat(JSON)
 
 path = str(Path(__file__).parent.absolute())
@@ -683,3 +683,16 @@ def get_label(entity: str) -> str:
         return None
 
 
+if __name__=='__main__':
+    sparql_query = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX : <http://rdf.freebase.com/ns/> \nSELECT (COUNT(?x0) AS ?value) WHERE {\nSELECT DISTINCT ?x0  WHERE { \n?x0 :type.object.type :rail.railway_terminus . \nVALUES ?x1 { :m.0yp3mmb } \n?x1 :rail.railway.terminuses ?x0 . \nFILTER ( ?x0 != ?x1  )\n}\n}"
+    print(sparql)
+    # sparql_query = """SELECT (COUNT(?x0) AS ?value) WHERE {
+    #     SELECT DISTINCT ?x0  WHERE { 
+    #         ?x0 :type.object.type :rail.railway_terminus . 
+    #         VALUES ?x1 { :m.0yp3mmb } 
+    #         ?x1 :rail.railway.terminuses ?x0 . 
+    #         FILTER ( ?x0 != ?x1  ) 
+    #         }
+    #         }"""
+    res = execute_query(sparql_query)
+    print(res)

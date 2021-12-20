@@ -39,10 +39,13 @@ class EntitySurfaceIndexMemory(object):
     def __init__(self, entity_list_file, surface_map_file, entity_index_prefix):
         self.entity_list_file = entity_list_file
         self.surface_map_file = surface_map_file
-
+        
+        # get or build entity vocabulary
         self.mid_vocabulary = self._get_entity_vocabulary(entity_index_prefix)
+        # get or build surface index
         self.surface_index = self._get_surface_index(entity_index_prefix)
 
+        # entity_list mmap file, to get entity from offset
         self.entities_mm_f = open(entity_list_file, 'r')
         self.entities_mm = mmap.mmap(self.entities_mm_f.fileno(), 0,access=mmap.ACCESS_READ)
         logger.info("Done initializing surface index.")
@@ -54,10 +57,10 @@ class EntitySurfaceIndexMemory(object):
         :return:
         """
         vocab_file = index_prefix + "_mid_vocab"
-        if os.path.isfile(vocab_file):
+        if os.path.isfile(vocab_file): # already exists
             logger.info("Loading entity vocabulary from disk.")
             vocabulary = marshal.load(open(vocab_file, 'rb'))
-        else:
+        else: # not exists
             vocabulary = self._build_entity_vocabulary()
             logger.info("Writing entity vocabulary to disk.")
             marshal.dump(vocabulary, open(vocab_file, 'wb'))
@@ -70,10 +73,10 @@ class EntitySurfaceIndexMemory(object):
         :return:
         """
         surface_index_file = index_prefix + "_surface_index"
-        if os.path.isfile(surface_index_file):
+        if os.path.isfile(surface_index_file): # already exists
             logger.info("Loading surfaces from disk.")
             surface_index = marshal.load(open(surface_index_file, 'rb'))
-        else:
+        else: # not exists
             surface_index = self._build_surface_index()
             logger.info("Writing entity surfaces to disk.")
             marshal.dump(surface_index, open(surface_index_file, 'wb'))
@@ -99,15 +102,15 @@ class EntitySurfaceIndexMemory(object):
                     cols = line.rstrip().split('\t')
                     surface_form = cols[0]
                     # surface_form = normalize_entity_name(surface_form)
-                    surface_form = normalize_entity_name(surface_form)
-                    score = float(cols[1])
-                    mid = cols[2]
-                    entity_id = self.mid_vocabulary[mid]
+                    surface_form = normalize_entity_name(surface_form) # surface score
+                    score = float(cols[1]) # score
+                    mid = cols[2] # mid
+                    entity_id = self.mid_vocabulary[mid] # entity offset
                     if not surface_form in surface_index:
-                        surface_form_entries = array.array('d')
+                        surface_form_entries = array.array('d') # build an array for entries of (entity_ids,score), array.array('d') means double array
                         surface_index[surface_form] = surface_form_entries
-                    surface_index[surface_form].append(entity_id)
-                    surface_index[surface_form].append(score)
+                    surface_index[surface_form].append(entity_id) # append entity_id
+                    surface_index[surface_form].append(score) # append score
                 except KeyError:
                     num_not_found += 1
                     if num_not_found < 100:
@@ -140,8 +143,8 @@ class EntitySurfaceIndexMemory(object):
                 if num_lines % 5000000 == 0:
                     logger.info('Read %s lines' % num_lines)
                 cols = line.decode().strip().split('\t')
-                mid = cols[0]
-                mid_vocab[mid] = offset
+                mid = cols[0] # mid
+                mid_vocab[mid] = offset # record the offsete of current entity
                 offset = mm.tell()
                 line = mm.readline()
         return mid_vocab
@@ -180,9 +183,10 @@ class EntitySurfaceIndexMemory(object):
             result = []
             i = 0
             while i < len(ids_array) - 1:
-                offset = ids_array[i]
-                surface_score = ids_array[i + 1]
-                entity = self._read_entity_from_offset(int(offset))
+                # get the entiries of (entity_id,score)
+                offset = ids_array[i] # entity_id
+                surface_score = ids_array[i + 1] # score
+                entity = self._read_entity_from_offset(int(offset)) # cast to int
                 # Check if the main name of the entity exactly matches the text.
                 result.append((entity, surface_score))
                 i += 2

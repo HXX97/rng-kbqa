@@ -33,7 +33,7 @@ class BertEntityLinker:
 
     def get_mentions(self, question: str):
         question = question.lower()
-        output = self._model.predict(question)
+        output = self._model.predict(question) # output of the bert ner model
         mentions = []
         current_mention = []
         for i, token in enumerate(output):

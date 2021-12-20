@@ -6,4 +6,4 @@ overrides==3.1.0
 pathlib==1.0.1
 
 tensorboardx==2.2
-editdistance==0.5.3
+editdistance # ==0.5.3

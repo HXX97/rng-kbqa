@@ -11,6 +11,15 @@ echo ${PWD}
 setup_dataset () {
     DATASET=$1
     echo "SETTING UP"${DATASET}
+
+    rm ${PWD}/${DATASET}/components
+    rm ${PWD}/${DATASET}/models
+    rm ${PWD}/${DATASET}/executor
+    rm ${PWD}/${DATASET}/ontology
+
+    rm ${PWD}/${DATASET}/run_ranker.py
+    rm ${PWD}/${DATASET}/run_generator.py
+
     ln -s ${PWD}/framework/components ${PWD}/${DATASET}
     ln -s ${PWD}/framework/models ${PWD}/${DATASET}
     ln -s ${PWD}/framework/executor ${PWD}/${DATASET}

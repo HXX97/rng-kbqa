@@ -70,7 +70,8 @@ elif [ "$ACTION" = "predict" ]; then
         --max_seq_length 96 \
         --output_dir  results/disamb/${dataset}_${split} \
         --per_gpu_eval_batch_size 128
+    # copy the entity disambugation file to misc/ directory
     cp results/disamb/${dataset}_${split}/predictions.json misc/${dataset}_${split}_entity_linking.json
 else
-    echo "train or eval"
+    echo "train or eval or predict"
 fi
