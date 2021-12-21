@@ -78,9 +78,11 @@ def proc_instance(ex, linking_results, cutoff = 10):
     qid = str(ex['qid'])
     query = ex['question']
     if 's_expression' in ex:
+        # get ground truth entities
         s_expr = ex['s_expression']
         entities_in_gt = set(extract_mentioned_entities(s_expr))
     else:
+        # ground truth entities are empty
         s_expr = 'null'
         entities_in_gt = set()
     
@@ -88,7 +90,7 @@ def proc_instance(ex, linking_results, cutoff = 10):
     # topk_set = set( chain(*[[x['id'] for x in entities_per_mention[:cutoff]] for entities_per_mention in linking_results]) )
     # if entities_in_gt.issubset(topk_set):
     for idx, entities_per_metion in enumerate(linking_results):
-        entities_per_metion = entities_per_metion[:cutoff]
+        entities_per_metion = entities_per_metion[:cutoff] # retain top 10 candidates
 
         # no linked entty in this mention
         if not entities_per_metion:
@@ -98,14 +100,14 @@ def proc_instance(ex, linking_results, cutoff = 10):
         candidates = []
         for entity in entities_per_metion:
             eid = entity['id']
-            fb_label = get_label(eid)
-            in_relations = get_in_relations(eid)
-            out_relations = get_out_relations(eid)
+            fb_label = get_label(eid) # label in freebase
+            in_relations = get_in_relations(eid) # in relations
+            out_relations = get_out_relations(eid) # out relations
             # print(fb_label, in_relations, out_relations)
             candidates.append(GrailEntityCandidate(
                 entity['id'], fb_label, entity['label'],
                 entity['surface_score'], entity['pop_score'], 
-                in_relations | out_relations))
+                in_relations | out_relations)) # create entity candidate
 
         target = next((x for x in entities_included if x in entities_in_gt), None)
         problem_id = f'{qid}-{idx}'
@@ -215,6 +217,7 @@ def disamb_collate_fn(data, tokenizer):
     return all_input_ids, all_token_type_ids, all_attention_masks, all_sample_masks, labels
 
 def read_disamb_instances_from_entity_candidates(dataset_file, candidate_file):
+    """read entity disambugation instances from entity candidates"""
     dataset = load_json(dataset_file)
     entity_linking_results = load_json(candidate_file)
 
@@ -240,7 +243,8 @@ def extract_disamb_features_from_examples(args, tokenizer, instances, do_predict
                     valid_disamb_problems.append(p)
                     if p.candidates[0].id == p.target_id:
                         baseline_acc += 1
-            else:
+            else: 
+                # predict or eval, append all the valid disamb problems
                 if (len(p.candidates) > 1):
                     valid_disamb_problems.append(p)
 

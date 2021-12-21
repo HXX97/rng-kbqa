@@ -49,6 +49,7 @@ def _process_query(query):
 
 cnt = 0
 def arrange_disamb_results_in_lagacy_format(split_id, entity_predictions_file):
+    """process entity disambugation results, return el_results"""
     dataset_id = 'grail'
     example_cache = join('feature_cache', f'{dataset_id}_{split_id}_disamb_examples.bin')
     entities_file = f'outputs/grail_{split_id}_entities.json'
@@ -93,16 +94,22 @@ def arrange_disamb_results_in_lagacy_format(split_id, entity_predictions_file):
     return el_results
 
 def enumerate_candidates_from_entities_and_literals(entities, literals, use_master):
+    """Enumerate candidate queries from entities and literals"""
     logical_forms = []
     # print(entities)
     # print(literals)
     if len(entities) > 0:
             for entity in entities:
+                # enumerate one-hop-one-entity candidate queries
                 logical_forms.extend(grail_enum_one_hop_one_entity_candidates(entity, use_master=use_master))
+                # enumerate two-hop-one-entity candidate queries
                 lfs_2 = grail_enum_two_hop_one_entity_candidates(entity, use_master=use_master)
                 logical_forms.extend(lfs_2)
     if len(entities) == 2:
+        # enumerate two-entity candidates
         logical_forms.extend(grail_enum_two_entity_candidates(entities[0], entities[1], use_master=use_master))
+    
+    # enumerate candidate queries from literal
     for literal in literals:
         logical_forms.extend(
             generate_all_logical_forms_for_literal(literal))
@@ -110,8 +117,9 @@ def enumerate_candidates_from_entities_and_literals(entities, literals, use_mast
     return logical_forms
 
 def process_single_item(item, el_results, extractor, use_master=True):
+    """enumerate candidates for single item"""
     item['qid'] = str(item['qid'])
-    print(item['qid'])
+    print(f"qid: {item['qid']}")
     # no el results provided, using gt
     if el_results is None:
         entities = []
@@ -152,7 +160,7 @@ def process_single_item(item, el_results, extractor, use_master=True):
         # if len(logical_forms) == 0:
         #     continue
         return {'qid': item['qid'], 'canonical_expr': canonical_expr, 's_expression': item['s_expression'], 'candidates': logical_forms}
-    else:
+    else: # no canonical expression
         canonical_expr = 'null'
         logical_forms = enumerate_candidates_from_entities_and_literals(entities, literals, use_master=use_master)
         return {'qid': item['qid'], 'canonical_expr': canonical_expr, 's_expression': 'null', 'candidates': logical_forms}
@@ -160,6 +168,7 @@ def process_single_item(item, el_results, extractor, use_master=True):
 
 # generate candidates
 def generate_candidate_file(dataset_file, el_results, is_parallel=False):
+    """generate candidates from entity linking results"""
     extractor = GrailQA_Value_Extractor()
 
     # el_fn = "graphq_el.json" if _gq1 else "grailqa_el.json"
@@ -175,7 +184,7 @@ def generate_candidate_file(dataset_file, el_results, is_parallel=False):
     else:
         candidates_info = []
         for i, item in enumerate(file_contents):
-            print(i)
+            print(f'example: {i}')
             candidates_info.append(process_func(item))
     candidates_info = [x for x in candidates_info if len(x['candidates'])]
     candidate_numbers = [len(x['candidates']) for x in candidates_info]
@@ -203,6 +212,7 @@ def pick_closest_target_expr(gt_expr, alter_exprs):
     return alter_exprs[selected_idx]
 
 def augment_edit_distance(candidates_info):
+    """augment logic forms with """
     reverse_properties, relation_dr, relations, upper_types, types = process_ontology('ontology/fb_roles', 'ontology/fb_types', 'ontology/reverse_properties')
     matcher = SemanticMatcher(reverse_properties, relation_dr, relations, upper_types, types)
     hit_chance = 0
@@ -212,7 +222,7 @@ def augment_edit_distance(candidates_info):
     for i, instance in enumerate(candidates_info):
         candidates = instance['candidates']
         gt = instance['canonical_expr']
-        print(i, len(candidates))
+        print(f'example: {i}, candidate num: {len(candidates)}')
         aux_candidates = []
         for c in candidates:
             if gt == 'null':
@@ -290,6 +300,8 @@ def _parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--split', required=True, help='split to operate on')
     parser.add_argument('--pred_file', default=None, help='prediction file')
+    parser.add_argument('--server_ip', default=None, help='server ip for debugging')
+    parser.add_argument('--server_port', default=None, help='server port for debugging')
     args = parser.parse_args()
     if args.split != 'train':
         if args.pred_file is None:
@@ -301,4 +313,14 @@ def _parse_args():
 if __name__ == '__main__':
     # assert len(sys.argv) >= 2
     args = _parse_args()  
+    
+    # args.server_ip = '0.0.0.0'
+    # args.server_port = 12345
+    
+    if args.server_ip and args.server_port:
+        import ptvsd
+        print("Waiting for debugger attach")
+        ptvsd.enable_attach(address=(args.server_ip, args.server_port), redirect_output=True)
+        ptvsd.wait_for_attach()
+
     enumerate_candidates_for_ranking(args.split, args.pred_file)

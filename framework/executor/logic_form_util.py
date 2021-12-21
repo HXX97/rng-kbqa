@@ -275,6 +275,7 @@ def count_function(G, start):
 
 
 def none_function(G, start, arg_node=None, type_constraint=True):
+    """turn a graph to an s_expr"""
     if arg_node is not None:
         arg = G.nodes[arg_node]['function']
         path = list(nx.all_simple_paths(G, start, arg_node))

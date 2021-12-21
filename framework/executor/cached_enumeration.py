@@ -151,10 +151,10 @@ class FBCacheBase:
 class FBLinkedRelationCache(FBCacheBase):
     FILENAME = 'LinkedRelation.bin'
     def query_in_out_relation(self, entity):
-        if not self.ready:
+        if not self.ready: # cache not loaded, load it
             self.load()
 
-        if entity in self.data:
+        if entity in self.data: # cache hit
             # print('HIT QUERY R', entity)
             return self.data[entity]
         # print('NOT HIT R', entity)
@@ -229,7 +229,7 @@ def add_node_to_G(G, node):
 
 
 def legal_relation(r, dataset='grail', force_in_bank=True):
-    # print("gq1:", gq1)
+    """check whether the relation is legal"""
     if r.endswith('#R'):
         r = r[:-2]
     if force_in_bank and (r not in relations_info):
@@ -400,6 +400,7 @@ def resolve_cvt_sub_classes(domain_r, dataset):
     return sub_domains
 
 def grail_rm_redundancy_adjancent_relations(in_relations, out_relations, use_master): 
+    """remove redundancy adjcancent relations such as reverse relations"""
     if use_master is None:
         return in_relations, out_relations
 
@@ -440,12 +441,12 @@ def grail_enum_one_hop_one_entity_candidates(entity: str,
     #     return lfs
     if len(in_relations_e) > 0:
         for r in in_relations_e:
-            if not legal_relation(r, dataset):
+            if not legal_relation(r, dataset): # only check for legal relation
                 continue
             domain_r = relations_info[r][0]
             sub_domains = resolve_cvt_sub_classes(domain_r, dataset)
             for sub_domain_r in sub_domains:
-                G = nx.MultiDiGraph()
+                G = nx.MultiDiGraph() # create query graph
                 node = {'nid': 0, 'id': entity, 'node_type': 'entity', 'question_node': 0,
                         'function': "none"}
                 G.add_node(node['nid'], id=node['id'], type=node['node_type'], question=node['question_node'],
@@ -461,10 +462,10 @@ def grail_enum_one_hop_one_entity_candidates(entity: str,
 
                 G1 = deepcopy(G)
 
-                lf = none_function(G, 1)
+                lf = none_function(G, 1) # none function, convert to s_expr
                 lfs.append(lf)
 
-                lf = count_function(G1, 1)
+                lf = count_function(G1, 1) # count function, conver to s_expr
                 lfs.append(lf)
 
     if len(out_relations_e) > 0:

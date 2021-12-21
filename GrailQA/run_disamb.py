@@ -235,6 +235,7 @@ def train(args, train_dataset, model, tokenizer):
 
 
 def evaluate(args, model, tokenizer, output_prediction=False):
+    # load examples
     dataset, examples = load_and_cache_examples(args, tokenizer, evaluate=True, output_examples=True)
 
     if not os.path.exists(args.output_dir) and args.local_rank in [-1, 0]:
@@ -307,11 +308,13 @@ def load_and_cache_examples(args, tokenizer, evaluate=False, output_examples=Fal
 
     # Init features and dataset from cache if it exists
     if os.path.exists(cached_features_file) and not args.overwrite_cache:
+        # cache exists
         logger.info("Loading features from cached file %s", cached_features_file)
         data = torch.load(cached_features_file)
         examples = data['examples']
         features = data['features']
     else:
+        # cache not exists, create it
         logger.info("Creating features from dataset file at %s", input_dir)
         candidate_file = args.predict_file if evaluate else args.train_file
         # TODO: hard coded for now
@@ -339,16 +342,21 @@ def load_and_cache_examples(args, tokenizer, evaluate=False, output_examples=Fal
 
 
 def main():
+    # parse args
     parser = argparse.ArgumentParser()
     register_args(parser)
     args = parser.parse_args()
 
+    # check output dir
     if (os.path.exists(args.output_dir) and os.listdir(args.output_dir) and args.do_train and not args.overwrite_output_dir):
         raise ValueError(
             "Output directory ({}) already exists and is not empty. Use --overwrite_output_dir to overcome.".format(
                 args.output_dir
             )
         )
+
+    args.server_ip = '0.0.0.0'
+    args.server_port = '12345'
 
     # Setup distant debugging if needed
     if args.server_ip and args.server_port:
