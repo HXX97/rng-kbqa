@@ -20,6 +20,7 @@ from components.rank_dataset import (
 )
 
 def grail_load_and_cache_rank_examples(args, tokenizer, evaluate=False):
+    # load grail data
     logger = args.logger
     if args.local_rank not in [-1, 0] and not evaluate:
         # Make sure only the first process in distributed training process the dataset, and the others will use the cache

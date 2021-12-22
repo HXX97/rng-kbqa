@@ -301,7 +301,7 @@ def assign_bootstrapping_scores(args, dataset, model, tokenizer, output_logits_f
     return results
 
 def evaluate(args, model, tokenizer, output_prediction=False):
-    dataset = load_and_cache_rank_examples(args, tokenizer, evaluate=True)
+    dataset = load_and_cache_rank_examples(args, tokenizer, evaluate=True) # load data for ranking
 
     if not os.path.exists(args.output_dir) and args.local_rank in [-1, 0]:
         os.makedirs(args.output_dir)
@@ -357,6 +357,10 @@ def main():
                 args.output_dir
             )
         )
+
+    # for debugger attach
+    args.server_ip = '0.0.0.0'
+    args.server_port = '12345'
 
     # Setup distant debugging if needed
     if args.server_ip and args.server_port:

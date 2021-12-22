@@ -198,6 +198,7 @@ def grail_proc_ranking_exs(line, data_bank, linear_method, is_eval=False):
     return RankingExample(qid, query, gt, candidates, entity_label_map)
 
 def grail_read_examples_from_jsonline_file(dataset_file, candidate_file, linear_method='vanilla', is_eval=False):
+    # grail read examples from jsonline file
     data_bank = load_json(dataset_file)
 
     data_bank = dict([(str(x['qid']), x) for x in data_bank])
