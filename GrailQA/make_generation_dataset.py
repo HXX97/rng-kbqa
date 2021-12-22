@@ -163,6 +163,9 @@ def _parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--split', required=True, help='split to operate on')
     parser.add_argument('--logit_file', default=None, help='logit file')
+    parser.add_argument('--server_ip', default=None, help='server ip for debugging')
+    parser.add_argument('--server_port', default=None, help='server port for debugging')
+
     args = parser.parse_args()
     if args.logit_file is None:
         args.logit_file = f'misc/grail_{args.split}_candidate_logits.bin'
@@ -172,4 +175,14 @@ def _parse_args():
 
 if __name__=='__main__':
     args = _parse_args()
+
+    # args.server_ip = '0.0.0.0'
+    # args.server_port = 12345
+
+    print("Waiting for debugger attach")
+    if args.server_ip and args.server_port:
+        import ptvsd
+        ptvsd.enable_attach(address=(args.server_ip,args.server_port),redirect_output=True)
+        ptvsd.wait_for_attach()
+
     main(args.split, args.logit_file)

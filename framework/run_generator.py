@@ -360,4 +360,12 @@ def main():
 
 
 if __name__ == "__main__":
+    server_ip = '0.0.0.0'
+    server_port = 12345
+    if server_ip and server_port:
+        import ptvsd
+        print('Waiting for debugger attach...')
+        ptvsd.enable_attach(address=(server_ip,server_port),redirect_output=True)
+        ptvsd.wait_for_attach()
+        
     main()

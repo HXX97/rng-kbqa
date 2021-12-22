@@ -113,7 +113,7 @@ def denomarlize_s_expr(normed_expr, entity_label_map):
             segments.append(t)
             cur_seg = ''
             continue
-        elif t == ',':
+        elif t == ',': # ',' is replaced with '.' in property
             cur_seg += '.'
             continue
         elif is_value_tok(t):
@@ -185,7 +185,7 @@ def aggressive_top_k_eval(split, predict_file):
     final_exectuable_cnt = 0
     for feat in tqdm(generation_dataset, total=len(generation_dataset)):
         qid = feat['qid']
-        pred = predictions[qid]
+        pred = predictions[qid] # prediction gennerated by model
 
         entity_label_map = get_entity_mapping_from_top_candidates(feat)
         found_exectutable = False
@@ -205,10 +205,11 @@ def aggressive_top_k_eval(split, predict_file):
                     top_hit += 1
                 break
 
-        if found_exectutable:
+        if found_exectutable: # found executable query from generated model
             gen_exectuable_cnt += 1
 
 
+        # no executable query generated form model, use ranking candidates
         if not found_exectutable and len(feat['top_candidates']):
             for can in feat['top_candidates']:
                 query_expr = can['logical_form']
@@ -371,9 +372,9 @@ def remedy_unincluded_by_nn(split):
         qid = str(d['qid'])
         if qid in covered_ids:
             continue
-        
+        # uncoverd qids
         revise_num += 1
-        pred = nn_revision.predict(qid, d['question'])
+        pred = nn_revision.predict(qid, d['question']) # predict the most similar query from train set
         # print(d['question'])
         # print(pred)
         current_predictions.append(pred)
@@ -388,6 +389,8 @@ def _parse_args():
     parser.add_argument('--split', required=True, help='split to operate on')
     parser.add_argument('--pred_file', default=None, help='topk prediction file')
     parser.add_argument('--revise_only', action='store_true', dest='revise_only', default=False, help='only do revising')
+    parser.add_argument('--server_ip', default=None, help='server ip for debugging')
+    parser.add_argument('--server_port', default=None, help='server port for debugging')
     args = parser.parse_args()
     if args.pred_file is None:
         args.pred_file = f'misc/grail_{args.split}_topk_generations.json'
@@ -396,10 +399,21 @@ def _parse_args():
     return args
 
 if __name__=='__main__':
+    """go down the top-k list, execute the logiccal form one by one until find one executable logical form"""
     args = _parse_args()
     # top_k_eval(args.split, args.pred_file)
     # force_top_1_eval(args.split, args.pred_file)
     # top_k_upperbound(args.split, args.pred_file)
+
+    args.server_ip = '0.0.0.0'
+    args.server_port = 12345
+    
+    if args.server_ip and args.server_port:
+        import ptvsd
+        print("Waiting for debugger attach")
+        ptvsd.enable_attach(address=(args.server_ip, args.server_port), redirect_output=True)
+        ptvsd.wait_for_attach()
+
     if not args.revise_only:
         aggressive_top_k_eval(args.split, args.pred_file)
         remedy_unincluded_by_nn(args.split)

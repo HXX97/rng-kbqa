@@ -84,10 +84,10 @@ def grail_load_and_cache_gen_examples(args, tokenizer, evaluate=False):
     cached_features_file = os.path.join('feature_cache',"gen_{}_{}_{}_{}".format(dataset_id,
         split_id, args.model_type, args.top_k_candidates))
     # Init features and dataset from cache if it exists
-    if os.path.exists(cached_features_file) and not args.overwrite_cache:
+    if os.path.exists(cached_features_file) and not args.overwrite_cache: # feature cache already exists
         logger.info("Loading features from cached file %s", cached_features_file)
         features = torch.load(cached_features_file)
-    else:
+    else: # feature cache does not exist, create it
         logger.info("Creating features from dataset file at %s", input_dir)
         candidate_file = args.predict_file if evaluate else args.train_file
         dataset_file = join('outputs', f'grailqa_v1.0_{split_id}.json')
